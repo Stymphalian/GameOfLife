@@ -1,0 +1,52 @@
+[-] population
+[-] number of steps
+[-]Allow the map to wrap around 
+	[-] horizontal wrapping
+	[-] vertical wrapping
+-View class to handle different views.
+	takes the model and displays it
+	will now the width and height of the display
+	will be given a  window of the model to display
+	will determine the best screen real estate to assign to each cell
+-zooming
+	-zooming with keyboard
+	-zooming with mouse
+			- a rectangle drawn by the mouse can be used to denote
+				the new screen region
+			- Minimum zoom level
+	- how to handle inifnite maximum zoom level
+		how do we handle the user continuing to zoom out.
+		each pixel will now represent an entire region of the world
+		therefore if > 50% of the region is covered by cells then the 
+		region will be displayed
+-better looking squares
+-controls for running the simulation
+	[-] ability to increase speed and decrease speed of steps.
+		- x0.25, x0.5, x2, x4, x8
+	[-] stop,start
+	[-] restart
+	- spawn new random configuration.
+	- load a configuration file
+			prompts the user for a filename.
+				- if the file is not found, it will continue 
+					with the current simulation
+				- if the file is found, it will stop the current
+					simulation, load the new configuration and then start
+					running it.
+			confiuration file will tell you:
+				- width and height of the world
+				- x and y coordinates of alive cells
+			will create a new model
+X show each cell as a faded region ( shades of gray )
+	[-] the value in the cell will be 100 as a alive
+		and 0 as dead, and then with decreasing gradients as
+		steps since it was alive.
+-colors for alive and dead cells
+-different conditions
+	- new types of cells, plant, animals, dead, alive
+	- modifications on when a cell turns alive, or dead
+-Adding interactiveness
+	- user clicks on point in the map which causes a cell to turn alive
+	- create a wave of alive cells
+	- create a shape of alive cells
+-Make it 3d

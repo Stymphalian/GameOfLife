@@ -11,3 +11,11 @@
 *.lai
 *.la
 *.a
+
+# Jordan's ignores
+allegro.log
+*~
+*.swp
+*.swo
+*.log
+noin*
