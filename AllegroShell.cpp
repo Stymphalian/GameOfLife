@@ -27,7 +27,7 @@ AllegroShell::AllegroShell(){
 	run_flag = true;
 	draw_flag = false;
 
-	int x = 9;
+	int x = 8;
 	x -= al_init();
 	x -= al_init_image_addon();
 	al_init_font_addon();
@@ -37,7 +37,7 @@ AllegroShell::AllegroShell(){
 	x -= al_install_audio();
 	x -= al_init_acodec_addon();
 	x -= al_init_primitives_addon();
-	x -= al_reserve_samples(10);
+	//x -= al_reserve_samples(10);
 	printf("%d errors during loading.\n",x);
 
 	// initializing the allegro objects
@@ -146,9 +146,11 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 		}
 	}
 
-	// handle the arrow keys.
+
 	if( ev->type == ALLEGRO_EVENT_KEY_CHAR) {
 		bool key_touched = false;
+
+			// handle the arrow keys.
 		if(al_key_down(&keyboard,ALLEGRO_KEY_UP)){
 			key_touched = true;
 			view->cam_y -= view->cam_move_rate;
@@ -166,30 +168,7 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			view->cam_x -= view->cam_move_rate;
 		}
 
-		if(key_touched){
-			if( model->horizontal_wrapping){
-				if(view->cam_x < 0){ view->cam_x = model->width + view->cam_x;}
-				else if(view->cam_x >= model->width){ view->cam_x %= model->width;}
-			}else{				
-				if(view->cam_x >= model->width - view->cam_w){ view->cam_x = model->width - view->cam_w;}
-				else if(view->cam_x < 0){ view->cam_x = 0;}
-			}
-			
-			if( model->vertical_wrapping){
-				if(view->cam_y < 0){ view->cam_y = model->height + view->cam_y;}
-				else if(view->cam_y >= model->height){ view->cam_y %= model->height;}
-			}else{
-				if(view->cam_y >= model->height - view->cam_h){view->cam_y = model->height - view->cam_h ;}
-				else if(view->cam_y < 0){view->cam_y = 0;}
-			}
-			draw_flag = true;
-		}
-	}
-	// end handling of arrow keys
-
-	// handle adjusting the camera size
-	if( ev->type == ALLEGRO_EVENT_KEY_CHAR){
-		bool key_touched = false;
+		// handle expanding the size of the camera
 		if(al_key_down(&keyboard,ALLEGRO_KEY_T)){
 			key_touched = true;
 			view->cam_w -= view->cam_move_rate;
@@ -206,14 +185,47 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			key_touched = true;
 			view->cam_h += view->cam_move_rate;
 		}
-		if( key_touched){
+
+		// handle the horizontal and vertical wrapping
+		if(al_key_down(&keyboard,ALLEGRO_KEY_3) ) {
+			model->horizontal_wrapping = !model->horizontal_wrapping;
+			key_touched = true;
+		}
+		if(al_key_down(&keyboard,ALLEGRO_KEY_4) ) {
+			model->vertical_wrapping = !model->vertical_wrapping;
+			key_touched = true;
+		}
+
+
+		if(key_touched){
+			// make sure that the camera remains within bounds
 			if( view->cam_w < 1){view->cam_w = 1;}
 			if( view->cam_h < 1){view->cam_h = 1;}
 			if( view->cam_w > model->width ) { view->cam_w = model->width;}
 			if( view->cam_h > model->height ){ view->cam_h = model->height;}
+
+			// make sure that the cam_x remains in bounds
+			if( model->horizontal_wrapping){
+				if(view->cam_x < 0){ view->cam_x = model->width + view->cam_x;}
+				else if(view->cam_x >= model->width){ view->cam_x %= model->width;}
+			}else{				
+				if(view->cam_x >= model->width - view->cam_w){ view->cam_x = model->width - view->cam_w;}
+				else if(view->cam_x < 0){ view->cam_x = 0;}
+			}
+			
+			// make sure that the cam_y remains in bounds
+			if( model->vertical_wrapping){
+				if(view->cam_y < 0){ view->cam_y = model->height + view->cam_y;}
+				else if(view->cam_y >= model->height){ view->cam_y %= model->height;}
+			}else{
+				if(view->cam_y >= model->height - view->cam_h){view->cam_y = model->height - view->cam_h ;}
+				else if(view->cam_y < 0){view->cam_y = 0;}
+			}
+
 			draw_flag = true;
 		}
 	}
+
 
 
 	if( ev->type == ALLEGRO_EVENT_KEY_CHAR) {
@@ -232,15 +244,6 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			draw_flag = true;
 		}
 
-		if(al_key_down(&keyboard,ALLEGRO_KEY_3) ) {
-			model->horizontal_wrapping = !model->horizontal_wrapping;
-			draw_flag = true;
-		}
-		if(al_key_down(&keyboard,ALLEGRO_KEY_4) ) {
-			model->vertical_wrapping = !model->vertical_wrapping;
-			draw_flag = true;
-		}
-	
 	}
 
 }

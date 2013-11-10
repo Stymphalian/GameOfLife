@@ -1,7 +1,7 @@
 CC=g++
 CFLAGS=-g -c -ansi -Wall
 INFLAGS=-Iinclude -Iallegro\include
-LDFLAGS=-L. -Lallegro\lib -lallegro-5.0.10-monolith-mt -lopengl32 -lglu32
+LDFLAGS=-L. -Lallegro\lib -lallegro-5.0.10-monolith-mt-debug -lopengl32 -lglu32
 
 #INFLAGS=-Iinclude -IC:\allegro\include
 #LDFLAGS=-L. -LC:\allegro\lib -lallegro-5.0.10-monolith-mt-debug -lopengl32 -lglu32

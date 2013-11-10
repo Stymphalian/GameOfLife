@@ -96,12 +96,12 @@ int Model::number_of_live_neighbours(int col,int row){
 
 			if( horizontal_wrapping ){ // handle horizontal wrapping
 				if( c2 < 0)	{c2 = width + c2; }
-				else if( c2 >= width ){c2 = c2 - width; }
+				else if( c2 >= width ){c2 = c2 %width; }
 			}else if( c2 < 0 || c2 >= width){ continue;}
 			
 			if( vertical_wrapping) { // handle vertical wrapping
 				if( r2 < 0){r2 = height + r2;}
-				else if(r2 >= height){r2 = r2 - height; }
+				else if(r2 >= height){r2 = r2%height; }
 			}else if( r2 < 0 || r2 >= height ){ continue;}
 
 			// count the alive cells

@@ -119,6 +119,9 @@ void View::draw_model(){
 			if( horiz_wrapping){ // handle any wrapping.
 				if(col < 0){ col = model->width + col;}
 				else if(col >= model->width){ col %= model->width;}
+			}else{
+				if(col < 0){ col = 0;}
+				else if(col >= model->width){ col = model->width;}
 			}
 		}
 
@@ -128,6 +131,9 @@ void View::draw_model(){
 		if( vert_wrapping){ // handle any wrapping.
 			if(row < 0){ row = model->height + row;}
 			else if(row >= model->height){ row %= model->height;}
+		}else{
+			if(row < 0){ row = 0;}
+			else if(row >= model->height){ row = model->height;}
 		}
 	}
 }

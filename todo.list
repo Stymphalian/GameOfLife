@@ -3,18 +3,19 @@
 [-]Allow the map to wrap around 
 	[-] horizontal wrapping
 	[-] vertical wrapping
--View class to handle different views.
+[-] View class to handle different views.
 	takes the model and displays it
 	will now the width and height of the display
 	will be given a  window of the model to display
 	will determine the best screen real estate to assign to each cell
 -zooming
 	[-]zooming with keyboard
+	- zoom in the center
 	-zooming with mouse
 			- a rectangle drawn by the mouse can be used to denote
 				the new screen region
 			- Minimum zoom level
-	- how to handle inifnite maximum zoom level
+	[x] how to handle inifnite maximum zoom level
 		how do we handle the user continuing to zoom out.
 		each pixel will now represent an entire region of the world
 		therefore if > 50% of the region is covered by cells then the 
@@ -28,7 +29,7 @@
 	- spawn new random configuration.
 	- load a configuration file
 			prompts the user for a filename.
-		@		- if the file is not found, it will continue 
+				- if the file is not found, it will continue 
 					with the current simulation
 				- if the file is found, it will stop the current
 					simulation, load the new configuration and then start
@@ -37,7 +38,7 @@
 				- width and height of the world
 				- x and y coordinates of alive cells
 			will create a new model
-X show each cell as a faded region ( shades of gray )
+[x] show each cell as a faded region ( shades of gray )
 	[-] the value in the cell will be 100 as a alive
 		and 0 as dead, and then with decreasing gradients as
 		steps since it was alive.
@@ -53,4 +54,5 @@ X show each cell as a faded region ( shades of gray )
 -Basic interface such as a menu screen
 	- basic start, exit
 - ability to manage the keyboard.
-	- setting up hotkeys
+	- setting up custom hotkeys
+	- better architecture for controls
