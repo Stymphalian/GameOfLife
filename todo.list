@@ -9,7 +9,7 @@
 	will be given a  window of the model to display
 	will determine the best screen real estate to assign to each cell
 -zooming
-	-zooming with keyboard
+	[-]zooming with keyboard
 	-zooming with mouse
 			- a rectangle drawn by the mouse can be used to denote
 				the new screen region
@@ -28,7 +28,7 @@
 	- spawn new random configuration.
 	- load a configuration file
 			prompts the user for a filename.
-				- if the file is not found, it will continue 
+		@		- if the file is not found, it will continue 
 					with the current simulation
 				- if the file is found, it will stop the current
 					simulation, load the new configuration and then start
@@ -50,3 +50,7 @@ X show each cell as a faded region ( shades of gray )
 	- create a wave of alive cells
 	- create a shape of alive cells
 -Make it 3d
+-Basic interface such as a menu screen
+	- basic start, exit
+- ability to manage the keyboard.
+	- setting up hotkeys

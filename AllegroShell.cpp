@@ -14,10 +14,11 @@
 #include <allegro5/allegro_primitives.h>
 
 #include "AllegroShell.h"
+#include "View.h"
 #include "Model.h"
 
-int size_x = 480;
-int size_y = 480;
+int size_x = 960;
+int size_y = 960;
 
 AllegroShell::AllegroShell(){
 	fps = 100;
@@ -25,6 +26,7 @@ AllegroShell::AllegroShell(){
 	display_w = 480;
 	run_flag = true;
 	draw_flag = false;
+
 	int x = 9;
 	x -= al_init();
 	x -= al_init_image_addon();
@@ -40,9 +42,11 @@ AllegroShell::AllegroShell(){
 
 	// initializing the allegro objects
 	display = al_create_display(display_h,display_w);
-	font_carbon_12 = al_load_font("data/carbon.ttf",12,0);
 	queue = al_create_event_queue();
 	timer = al_create_timer(1.0/fps);
+
+	al_toggle_display_flag(display,ALLEGRO_FULLSCREEN_WINDOW,false);
+	al_toggle_display_flag(display,ALLEGRO_NOFRAME,false);
 
 	// registering the even sourcees
 	al_register_event_source(queue,al_get_timer_event_source(timer));
@@ -52,19 +56,26 @@ AllegroShell::AllegroShell(){
 	al_clear_to_color(al_map_rgb(0,0,0));
 	al_flip_display();
 
-	model = new Model(size_x,size_y);
+
 	step_flag = false;
 	step_once_flag = false;
 
+	model = new Model(size_x,size_y);
+	al_set_timer_speed(timer,1.0/model->speed);
+
+
+	view = new View(this,model);
+	al_register_event_source(queue,view->get_event_source());
+	view->emit_event();
 }
 
 AllegroShell::~AllegroShell(){
 	al_stop_timer(timer);
 	al_destroy_timer(timer);
-	al_destroy_font(font_carbon_12);
 	al_destroy_event_queue(queue);
 	al_destroy_display(display);
 	delete model;
+	delete view;
 	printf("AllegroShell destroyed\n");
 }
 
@@ -85,32 +96,35 @@ bool AllegroShell::isMouseEvent(ALLEGRO_EVENT* ev){
 	}
 }
 
-void AllegroShell::handle_keyboard(){
-	static int gaurd = 0;
-	gaurd--;
-	if( gaurd < 0 ){ gaurd = 0;}
-
-
-
+void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 	if(al_key_down(&keyboard,ALLEGRO_KEY_ESCAPE) ) {run_flag = false;}
 	if(al_key_down(&keyboard,ALLEGRO_KEY_Q) ) {
-		model->speed++;
-		if( model->speed >100){
-			model->speed = 100;
+		if( ev->type == ALLEGRO_EVENT_KEY_CHAR|| 
+				ev->type == ALLEGRO_EVENT_KEY_CHAR ){
+			model->speed++;
+			if( model->speed > 100){
+				model->speed = 100;
+			}
+			al_set_timer_speed(timer,1.0/model->speed);
+			draw_flag = true;
 		}
 	}
 	if(al_key_down(&keyboard,ALLEGRO_KEY_W) ) {;}
 	if(al_key_down(&keyboard,ALLEGRO_KEY_E) ) {;}
 	if(al_key_down(&keyboard,ALLEGRO_KEY_A) ) {
-		model->speed--;
-		if( model->speed <= 0){
-			model->speed = 1;
+		if( ev->type == ALLEGRO_EVENT_KEY_CHAR || 
+				ev->type == ALLEGRO_EVENT_KEY_CHAR ){
+			model->speed--;
+			if( model->speed <= 0){
+				model->speed = 1;
+			}
+			al_set_timer_speed(timer,1.0/model->speed);
+			draw_flag = true;
 		}
 	}
 	if(al_key_down(&keyboard,ALLEGRO_KEY_S) ) {
-		if( gaurd == 0){
+		if( ev->type == ALLEGRO_EVENT_KEY_DOWN){
 			step_flag = (step_flag == false)? true: false;
-			gaurd = 2;
 		}
 	}
 	if(al_key_down(&keyboard,ALLEGRO_KEY_D) ) {
@@ -118,47 +132,144 @@ void AllegroShell::handle_keyboard(){
 	}
 	if(al_key_down(&keyboard,ALLEGRO_KEY_R) ) {
 		model->reset();
-	}
-	if(al_key_down(&keyboard,ALLEGRO_KEY_N) ) {
-		delete model;
-		model = new Model(size_x,size_y);
+		al_set_timer_speed(timer,1.0/model->speed);
 	}
 
-	if(al_key_down(&keyboard,ALLEGRO_KEY_1) ) {;}
-	if(al_key_down(&keyboard,ALLEGRO_KEY_2) ) {;}
-	if(al_key_down(&keyboard,ALLEGRO_KEY_3) ) {;}
+
+
+	if(al_key_down(&keyboard,ALLEGRO_KEY_N) ) {
+		if( ev->type == ALLEGRO_EVENT_KEY_DOWN){
+			delete model;
+			model = new Model(size_x,size_y);
+			view->model = model;
+			draw_flag = true;
+		}
+	}
+
+	// handle the arrow keys.
+	if( ev->type == ALLEGRO_EVENT_KEY_CHAR) {
+		bool key_touched = false;
+		if(al_key_down(&keyboard,ALLEGRO_KEY_UP)){
+			key_touched = true;
+			view->cam_y -= view->cam_move_rate;
+		}
+		if(al_key_down(&keyboard,ALLEGRO_KEY_DOWN)){
+			key_touched = true;
+			view->cam_y += view->cam_move_rate;	
+		}			
+		if(al_key_down(&keyboard,ALLEGRO_KEY_RIGHT)){
+			key_touched = true;
+			view->cam_x += view->cam_move_rate;
+		}
+		if(al_key_down(&keyboard,ALLEGRO_KEY_LEFT)){
+			key_touched = true;
+			view->cam_x -= view->cam_move_rate;
+		}
+
+		if(key_touched){
+			if( model->horizontal_wrapping){
+				if(view->cam_x < 0){ view->cam_x = model->width + view->cam_x;}
+				else if(view->cam_x >= model->width){ view->cam_x %= model->width;}
+			}else{				
+				if(view->cam_x >= model->width - view->cam_w){ view->cam_x = model->width - view->cam_w;}
+				else if(view->cam_x < 0){ view->cam_x = 0;}
+			}
+			
+			if( model->vertical_wrapping){
+				if(view->cam_y < 0){ view->cam_y = model->height + view->cam_y;}
+				else if(view->cam_y >= model->height){ view->cam_y %= model->height;}
+			}else{
+				if(view->cam_y >= model->height - view->cam_h){view->cam_y = model->height - view->cam_h ;}
+				else if(view->cam_y < 0){view->cam_y = 0;}
+			}
+			draw_flag = true;
+		}
+	}
+	// end handling of arrow keys
+
+	// handle adjusting the camera size
+	if( ev->type == ALLEGRO_EVENT_KEY_CHAR){
+		bool key_touched = false;
+		if(al_key_down(&keyboard,ALLEGRO_KEY_T)){
+			key_touched = true;
+			view->cam_w -= view->cam_move_rate;
+		}
+		if(al_key_down(&keyboard,ALLEGRO_KEY_Y)){
+			key_touched = true;
+			view->cam_w += view->cam_move_rate;
+		}
+		if(al_key_down(&keyboard,ALLEGRO_KEY_G)){
+			key_touched = true;
+			view->cam_h -= view->cam_move_rate;
+		}
+		if(al_key_down(&keyboard,ALLEGRO_KEY_H)){
+			key_touched = true;
+			view->cam_h += view->cam_move_rate;
+		}
+		if( key_touched){
+			if( view->cam_w < 1){view->cam_w = 1;}
+			if( view->cam_h < 1){view->cam_h = 1;}
+			if( view->cam_w > model->width ) { view->cam_w = model->width;}
+			if( view->cam_h > model->height ){ view->cam_h = model->height;}
+			draw_flag = true;
+		}
+	}
+
+
+	if( ev->type == ALLEGRO_EVENT_KEY_CHAR) {
+		if(al_key_down(&keyboard,ALLEGRO_KEY_1) ) {
+			if(ev->type == ALLEGRO_EVENT_KEY_CHAR){
+				view->cam_move_rate++;
+				if( view->cam_move_rate > 15){view->cam_move_rate = 15;}
+			}
+			draw_flag = true;
+		}
+		if(al_key_down(&keyboard,ALLEGRO_KEY_2) ) {
+			if(ev->type == ALLEGRO_EVENT_KEY_CHAR){
+				view->cam_move_rate--;
+				if( view->cam_move_rate < 1){view->cam_move_rate = 1;}
+			}
+			draw_flag = true;
+		}
+
+		if(al_key_down(&keyboard,ALLEGRO_KEY_3) ) {
+			model->horizontal_wrapping = !model->horizontal_wrapping;
+			draw_flag = true;
+		}
+		if(al_key_down(&keyboard,ALLEGRO_KEY_4) ) {
+			model->vertical_wrapping = !model->vertical_wrapping;
+			draw_flag = true;
+		}
+	
+	}
 
 }
-void AllegroShell::handle_mouse(){
+void AllegroShell::handle_mouse(ALLEGRO_EVENT* ev){
 
 }
 
 void AllegroShell::draw(){
-	al_clear_to_color(al_map_rgb(0,0,0));
-	model->draw(display_w,display_h);
-	ALLEGRO_COLOR c = al_map_rgb(120,120,80);
-	al_draw_textf(font_carbon_12,c,5,5,0,"steps: %d",model->total_steps);
-	al_draw_textf(font_carbon_12,c,5,20,0,"population: %d",model->population);
-	al_draw_textf(font_carbon_12,c,5,35,0,"speed: %d",model->speed);
-			
-	al_flip_display();
+	view->draw();
 }
 
 void AllegroShell::run(){
 // run the loop
+	unsigned num = 0;
 	ALLEGRO_EVENT ev;
 	al_start_timer(timer);
 	while( run_flag ){
 		al_wait_for_event(queue,&ev);
+		num++;
+		printf("\r%d",num);
 
 		if( ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE){
 			run_flag = false;
 		}else if( isKeyboardEvent(&ev)){
 			al_get_keyboard_state(&(keyboard));
-			handle_keyboard();
+			handle_keyboard(&ev);
 		}else if( isMouseEvent(&ev) ){
 			al_get_mouse_state(&(mouse));
-			handle_mouse();
+			handle_mouse(&ev);
 		}else if( ev.type  == ALLEGRO_EVENT_TIMER){
 			
 			// Update only if we haven't drawn the scene
@@ -167,19 +278,15 @@ void AllegroShell::run(){
 				if( step_once_flag){
 					// always step once if the user requests it
 					model->step();
-					model->tick_count = 0;
 					step_once_flag = false;
 				}else if(step_flag) {
-					// step only if we have matched speeds
-					if(model->tick_count < model->speed) {
-						model->tick_count++;
-					}else{
-						model->step();
-						model->tick_count =0;
-					}
+					model->step();
 				}
 			}
 			draw_flag = true;
+		}else if (ev.type == USER_VIEW_EVENT ){
+			// handling user events
+			al_unref_user_event(&ev.user);
 		}
 
 		if( draw_flag && al_event_queue_is_empty(queue)){

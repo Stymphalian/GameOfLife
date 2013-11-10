@@ -1,9 +1,7 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-class Model{
-	static const int ALIVE = 100;
-	static const int DEAD = 0;
+class Model{	
 public:
 	int population;
 	int total_steps;
@@ -19,21 +17,22 @@ public:
 	int* backmap; // the map acting as a backmap buffer
 	int* savedmap;
 
-	int cell_width;
-
+	int* vertices;
+	int vert_pos;
+	
 	Model(int w,int h);
 	~Model();
 	void step();
 	void reset();
-	void draw(int width,int height);
-	void draw(int width,int height,
-						int x, int y, int vieww, int viewh);
-
 private:
 	// private methods
 	void apply_condition(int col, int row);
 	int number_of_live_neighbours(int col, int row);
 	void load_random_configuration();	
+
+public:
+	static const int ALIVE = 100;
+	static const int DEAD = 0;
 };
 
 #endif

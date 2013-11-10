@@ -15,7 +15,6 @@
 
 #include "Model.h"
 
-
 // ****************************
 // Implementation of the Model class
 // ****************************
@@ -34,6 +33,8 @@ Model::Model(int w,int h){
 	backmap = new int[width*height];
 	savedmap = new int[width*height];
 
+	vertices = new int[width*height*2];
+	vert_pos = 0;
 
 	// initialize all the arrays
 	memset(map,DEAD, sizeof(int)* width*height);
@@ -47,10 +48,13 @@ Model::~Model(){
 	delete[] map;
 	delete[] backmap;
 	delete[] savedmap;
+	delete[] vertices;
+	printf("Model destroyed\n");
 }
 
 
 void Model::apply_condition(int col, int row){
+	static int decrease_rate = 1;
 	int new_state = 0;
 	int current_state = map[row*width + col];
 	int num = number_of_live_neighbours(col,row);
@@ -59,9 +63,8 @@ void Model::apply_condition(int col, int row){
 		// cell is dead
 		if( num == 3){
 			new_state = ALIVE;
-			population++;
 		}else if( current_state != DEAD){
-			new_state = current_state - 4;
+			new_state = current_state - decrease_rate;
 		}
 
 	}else if( current_state == ALIVE){
@@ -70,14 +73,13 @@ void Model::apply_condition(int col, int row){
 			new_state = DEAD;
 		}else if( num  >= 2 && num <= 3){ 
 			new_state = ALIVE;
-			population++;		
 		}else if( num >= 3){
 			new_state = DEAD;
 		}
 	}
 		
 	if( current_state == ALIVE && new_state == DEAD){
-		new_state = current_state -4;
+		new_state = current_state - decrease_rate;
 	}
 
 	backmap[row*width + col] = new_state;
@@ -92,23 +94,17 @@ int Model::number_of_live_neighbours(int col,int row){
 			int r2 = row-1 + r;
 			if( c2 == col && r2 == row){continue;}
 
-
-			if( horizontal_wrapping ){
-				if( c2 < 0)	{
-					c2 = width + c2; // "+" because c2 is negative and we want to substract
-				}else if( c2 >= width ){
-					c2 = c2 - width;
-				}
+			if( horizontal_wrapping ){ // handle horizontal wrapping
+				if( c2 < 0)	{c2 = width + c2; }
+				else if( c2 >= width ){c2 = c2 - width; }
 			}else if( c2 < 0 || c2 >= width){ continue;}
 			
-			if( vertical_wrapping) {
-				if( r2 < 0){
-					r2 = height + r2; // "+" because r2 is negative and we want to substract
-				}else if(r2 >= height){
-					r2 = r2 - height;
-				}
+			if( vertical_wrapping) { // handle vertical wrapping
+				if( r2 < 0){r2 = height + r2;}
+				else if(r2 >= height){r2 = r2 - height; }
 			}else if( r2 < 0 || r2 >= height ){ continue;}
 
+			// count the alive cells
 			if( map[r2*width + c2] == ALIVE){count++;}
 		}
 	}
@@ -121,9 +117,17 @@ void Model::step(){
 	total_steps++;
 	population = 0;
 	// iterate through each position in the map and update the cells
+	vert_pos= 0;
+
 	for( int row = 0 ; row < height; ++row){
 		for( int col = 0; col < width; ++col){
-			apply_condition(col,row);
+			apply_condition(col,row);			
+			if( backmap[row*width  + col] == ALIVE){
+				population++;
+				vertices[vert_pos*2] = col;
+				vertices[vert_pos*2 +1] = row;
+				vert_pos++;
+			}
 		}
 	}
 
@@ -136,6 +140,9 @@ void Model::step(){
 
 void Model::load_random_configuration(){
 	srand(time(0));
+	vert_pos = 0;
+	population = 0;
+
 	for(int row = 0; row < height; ++row){
 		for( int col = 0;  col  < width; ++col){
 			
@@ -144,6 +151,13 @@ void Model::load_random_configuration(){
 			else {num = DEAD; }
 
 			map[row*width + col] = num;
+
+			if( num == ALIVE){
+				population++;
+				vertices[vert_pos*2] = col;
+				vertices[vert_pos*2+1] = row;
+				vert_pos++;
+			}
 		}
 	}
 }
@@ -159,21 +173,16 @@ void Model::reset(){
 
 	// reset the map to the saved map
 	memcpy(map, savedmap, sizeof(int)*width*height);
-}
 
-void Model::draw(int dispw,int disph){
-	int cell_width = dispw/width;
-	int cell_height = disph/height;
+	vert_pos = 0;
+	for(int row = 0; row < height; ++row){
+		for(int col = 0; col < width; ++col){
+			if(map[row*width +col] == ALIVE) {
+				population++;
 
-	for ( int row = 0; row <  height; ++row){
-		for( int col = 0; col < width; ++col){
-			if( map[row*width + col] == ALIVE){
-				int x1 = col*cell_width; 
-				int y1 = row*cell_height;
-				int x2 = x1 + cell_width;
-				int y2 = y1 + cell_height;
-				//al_draw_rounded_rectangle(x1,y1,x2,y2,0.5,0.5,al_map_rgb(255,255,255),0);
-				al_draw_rectangle(x1,y1,x2,y2,al_map_rgb(180,180,180),1);
+				vertices[vert_pos*2] = col;
+				vertices[vert_pos*2 +1] = row;
+				vert_pos++;
 			}
 		}
 	}

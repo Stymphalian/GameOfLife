@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -ansi -Wall
+CFLAGS=-g -c -ansi -Wall
 INFLAGS=-Iinclude -Iallegro\include
 LDFLAGS=-L. -Lallegro\lib -lallegro-5.0.10-monolith-mt -lopengl32 -lglu32
 
@@ -9,7 +9,7 @@ LDFLAGS=-L. -Lallegro\lib -lallegro-5.0.10-monolith-mt -lopengl32 -lglu32
 
 
 OBJDIR:=objdir
-SOURCES=main.cpp Model.cpp AllegroShell.cpp
+SOURCES=main.cpp Model.cpp AllegroShell.cpp View.cpp
 OBJECTS=$(addprefix $(OBJDIR)\, $(SOURCES:.cpp=.o) )
 
 EXECUTABLE=noin
