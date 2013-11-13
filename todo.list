@@ -10,13 +10,14 @@
 	will determine the best screen real estate to assign to each cell
 -zooming ( might still have some bugs)
 	[-]zooming with keyboard
+	- double clicking in one place causes a zoom by a factor of two.
 	[x]zoom in the center
 	- zooming with mouse
 			[-] a rectangle drawn by the mouse can be used to denote
 				the new screen region
 			[-] Minimum and max zoom level
-			- Shift-mouse means we zoom-out instead of in
-			- provide option for even width/height zoom only
+			[-] Right click cause you to zoom-out instaed of "in"
+			- provide option for even width/height zoom only,
 	[x] how to handle inifnite maximum zoom level
 		how do we handle the user continuing to zoom out.
 		each pixel will now represent an entire region of the world
@@ -56,6 +57,7 @@
 - ability to manage the keyboard.
 	- setting up custom hotkeys
 	- better architecture for controls
+[-] Added a logger class
 - optimization
 	- optimize the draw_model routine. Don't need to do so many 'if' checks 
 		on the rows and columns if we split up the login into two more loops.

@@ -14,6 +14,7 @@
 #include <allegro5/allegro_primitives.h>
 
 #include "Model.h"
+#include "Textlog.cpp"
 
 // ****************************
 // Implementation of the Model class

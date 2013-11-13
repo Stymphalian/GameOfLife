@@ -13,6 +13,7 @@
 #include <allegro5/allegro_acodec.h>
 #include <allegro5/allegro_primitives.h>
 
+#include "Textlog.cpp"
 #include "View.h"
 #include "AllegroShell.h"
 #include "Model.h"
@@ -174,34 +175,43 @@ void View::zoom_camera(int tl_x, int tl_y, int width, int height,
 	assert(cell_w != 0);
 	assert(cell_h != 0);
 
-	if( direction == 1) // Zooming Out
+	if( direction == 0) // Zooming-In
 	{
+		// if cell_w > 1 then each pixel is a fractio of a cell
+		// if cell_w == 1 then each pixel is exactly one cell
+		// if cell_w < 1  then each pixel represent more thatn one cell
+		Textlog::get().log("zoom-in: cam(x,y,w,h) |");
+		Textlog::get().log("(%d,%d,%d,%d)",cam_x,cam_y,cam_w,cam_h);
 
-		if( cell_w < 1){cell_w = 1.0/cell_w;}
-		if( cell_h < 1 ){cell_h = 1.0/cell_h;}
-
-		cam_x += tl_x/cell_w;
-		cam_y += tl_y/cell_h;
+		cam_x += (tl_x/cell_w);
+		cam_y += (tl_y/cell_h);
 		cam_w = width/cell_w;
 		cam_h = height/cell_h;
+		make_cam_within_bounds();
+
+		Textlog::get().log("--> (%d,%d,%d,%d)\n",cam_x,cam_y,cam_w,cam_h);
+	}
+	else if( direction == 1) // Zooming-Out
+	{
 	
+		float new_cell_w = ((float)width/disp_w)*cell_w;
+		float new_cell_h = ((float)height/disp_h)*cell_h;
+		if(new_cell_w < disp_w/model->width) { new_cell_w = disp_w/model->width;}
+		if(new_cell_h < disp_h/model->height) { new_cell_h = disp_h/model->height;}
+
+		Textlog::get().log("zoom-out:cell_w,cell_h,cam(x,y,w,h)|");
+		Textlog::get().log("%0.2f,%0.2f,",cell_w,new_cell_w);
+		Textlog::get().log("%0.2f,%0.2f,",cell_h,new_cell_h);
+		Textlog::get().log("(%d,%d,%d,%d)",cam_x,cam_y,cam_w,cam_h);
+		
+		cam_x = cam_x - tl_x/new_cell_w;
+		cam_y = cam_y - tl_y/new_cell_h;
+		cam_w = disp_w/(new_cell_w);
+		cam_h = disp_h/(new_cell_h);
+		make_cam_within_bounds();
+
+		Textlog::get().log("->(%d,%d,%d,%d)\n",cam_x,cam_y,cam_w,cam_h);
 	}
-	else if( direction == 0) // Zooming-In
-	{
-
-		// if cell_w/cell_h < 1, then each pixel represents more than one cell
-		// else they represent only a fraction of the cell
-		// (1.0 /cell_w) gives the numbers of cells per pixel.
-		if( cell_w < 1){cell_w = 1.0/cell_w;}
-		if( cell_h < 1 ){cell_h = 1.0/cell_h;}
-
-		cam_x += tl_x/cell_w;
-		cam_y += tl_y/cell_h;
-		cam_w = width/cell_w;
-		cam_h = height/cell_h;
-	}
-
-	make_cam_within_bounds();
 }
 
 void View::make_cam_within_bounds(){
@@ -216,7 +226,7 @@ void View::make_cam_within_bounds(){
 	// Handle the horizontal camer position
 	if( model->horizontal_wrapping){
 		// make sure cam_x is good, with wrapping
-		if( cam_x < 0 ){ cam_x = model->width + cam_x;}
+		if( cam_x < 0 ){ cam_x = model->width - abs(cam_x)%model->width;}
 		else if ( cam_x >= model->width) { cam_x %= model->width;}
 	}else{
 		// 0 <= cam_x < model->width - cam_w
@@ -227,7 +237,7 @@ void View::make_cam_within_bounds(){
 	// handle the vertical camera position
 	if( model->vertical_wrapping){
 		// make sure that cam_y is good, with wrapping
-		if( cam_y < 0 ) { cam_y = model->height  + cam_y;}
+		if( cam_y < 0 ) { cam_y = model->height  - abs(cam_y)%model->height;}
 		else if( cam_y >= model->height) { cam_y %= model->height;}
 	}else{
 		//  0 <= cam_y < model->height - cam_h

@@ -9,7 +9,7 @@ LDFLAGS=-L. -Lallegro\lib -lallegro-5.0.10-monolith-mt-debug -lopengl32 -lglu32
 
 
 OBJDIR:=objdir
-SOURCES=main.cpp Model.cpp AllegroShell.cpp View.cpp
+SOURCES=main.cpp Model.cpp AllegroShell.cpp View.cpp Textlog.cpp
 OBJECTS=$(addprefix $(OBJDIR)\, $(SOURCES:.cpp=.o) )
 
 EXECUTABLE=noin

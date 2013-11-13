@@ -46,6 +46,7 @@ class AllegroShell {
 		bool isMouseEvent(ALLEGRO_EVENT* ev);
 		void handle_keyboard(ALLEGRO_EVENT* ev);
 		void handle_mouse(ALLEGRO_EVENT* ev);
+		void load_configuration();
 		void draw();
 		void run();
 	private:
@@ -53,9 +54,10 @@ class AllegroShell {
 		int display_h;
 		int fps;
 
+		void _zoom_mouse(int direction);
 		void zoom_in_mouse();
 		void zoom_out_mouse();
-		
+
 	protected:
 };
 #endif

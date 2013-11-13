@@ -13,12 +13,13 @@
 #include <allegro5/allegro_acodec.h>
 #include <allegro5/allegro_primitives.h>
 
+#include "Textlog.cpp"
 #include "AllegroShell.h"
 #include "View.h"
 #include "Model.h"
 
-int size_x = 960;
-int size_y = 960;
+int size_x = 480;
+int size_y = 480;
 
 AllegroShell::AllegroShell(){
 	fps = 30;
@@ -252,58 +253,9 @@ void _Mouse::update(ALLEGRO_EVENT* ev){
 	al_get_mouse_state(&mouse);
 }
 
-void AllegroShell::zoom_in_mouse(){
-	_Mouse* m = mouse; // just o make it easier to type shit out.
 
-	// Only zoom-in if the x or y position mouse has moved
-	int dx = abs( m->start_x - m->mouse.x);
-	int dy = abs( m->start_y - m->mouse.y);
-	bool moved_enough_flag = ( dx  > 0 || dy > 0);
-	if( moved_enough_flag == false){return;}
 
-	// find the top-left corner of the bounding box.
-	int tl_x = ( m->start_x < m->mouse.x) ? m->start_x : m->mouse.x;;
-	int tl_y = ( m->start_y < m->mouse.y) ? m->start_y : m->mouse.y;;
-
-	// find the width/hieght of each cell in PIXELS
-	float cell_width  = (float)view->disp_w/view->cam_w;
-	float cell_height = (float)view->disp_h/view->cam_h;
-
-	// Initially set the cam_w/cam_h to be the size of the
-	// the bouding box (measured in PIXELS)
-	int saved_cam_w = view->cam_w;
-	int saved_cam_h = view->cam_h;
-	view->cam_w = abs(m->mouse.x - m->start_x);
-	view->cam_h = abs(m->mouse.y - m->start_y);
-
-	if( cell_width >= 1){
-		// if cell_width is greater than 0, we know that each pixel on the 
-		// screen represents only a fraction of the cell.
-		view->cam_x += tl_x/cell_width;
-		view->cam_w =view->cam_w/cell_width;
-	}else{
-		// 1.) cell_width == 0. this means that each pixel represents one cell.
-		// 2.) cell_width < 0. This means that each pixel represent more than one cell.
-		// to know the number of cells in each pixel we take the inverse of cell_width.
-		//cell_width = (float)view->cam_w/view->disp_h;
-		cell_width = (float) saved_cam_w/view->disp_w;
-		view->cam_x +=  tl_x*cell_width;
-		view->cam_w *= cell_width;
-	}
-
-	if( cell_height >= 1){
-		view->cam_y += tl_y/cell_height;
-		view->cam_h = view->cam_h /cell_height;
-	}else{				
-		//cell_height = (float)view->cam_h/view->disp_h;
-		cell_height = (float) saved_cam_h/view->disp_h;
-		view->cam_y += tl_y*cell_height;
-		view->cam_h *= cell_height;
-	}
-	view->make_cam_within_bounds();
-}
-
-void AllegroShell::zoom_out_mouse(){
+void AllegroShell::_zoom_mouse(int direction){
 	_Mouse* m = mouse; // just to make it easier to type shit out.
 
 	int dx = abs( m->start_x - m->mouse.x);
@@ -315,8 +267,10 @@ void AllegroShell::zoom_out_mouse(){
 	float cell_w  = (float)view->disp_w/view->cam_w;
 	float cell_h = (float)view->disp_h/view->cam_h;
 
-	view->zoom_camera(tl_x,tl_y,dx,dy,cell_w,cell_h,0);
+	view->zoom_camera(tl_x,tl_y,dx,dy,cell_w,cell_h,direction);
 }
+void AllegroShell::zoom_in_mouse(){_zoom_mouse(0); }
+void AllegroShell::zoom_out_mouse(){_zoom_mouse(1);}
 
 void AllegroShell::handle_mouse(ALLEGRO_EVENT* ev){
 		// ON BUTTON DOWN
@@ -372,6 +326,17 @@ void AllegroShell::draw(){
 	view->draw();
 }
 
+void AllegroShell::load_configuration(){
+	ALLEGRO_FILECHOOSER* choose;
+	choose = al_create_native_file_dialog(0,"","*.*",0);
+	if(!choose){return;}
+
+	al_show_native_file_dialog(display,choose);
+	const char* file = al_get_native_file_dialog_path(choose,0);
+	Textlog::get().log("Loading map: %s",file);
+	al_destroy_native_file_dialog(choose);
+	
+}
 
 void AllegroShell::run(){
 // run the loop
@@ -382,7 +347,9 @@ void AllegroShell::run(){
 	unsigned keyboard_count = 0;
 	unsigned mouse_count = 0;
 	unsigned timer_count = 0;
+	load_configuration();
 
+	
 	while( run_flag ){
 		al_wait_for_event(queue,&ev);
 		num++;
@@ -423,7 +390,8 @@ void AllegroShell::run(){
 		}
 	} // end while(run_flag)
 
-	printf("\nkeyboard_count = %u\n",keyboard_count);
-	printf("mouse_count = %u\n",mouse_count);
-	printf("timer_count = %u\n",timer_count);
+
+	Textlog::get().log("\nkeyboard_count = %u\n",keyboard_count);
+	Textlog::get().log("mouse_count = %u\n",mouse_count);
+	Textlog::get().log("timer_count = %u\n",timer_count);
 }
