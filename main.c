@@ -201,7 +201,8 @@ void initAllegro(struct al_object* borg){
 	printf("%d errors during loading.\n",x);
 
 
-	borg->frame = al_create_display(480,480);
+	// borg->frame = al_create_display(480,480);
+	borg->frame = al_create_display(800,800);
 	borg->font = al_load_font("data/carbon.ttf",12,0);
 	borg->queue = al_create_event_queue();
 	borg->timer = al_create_timer(1.0/60);

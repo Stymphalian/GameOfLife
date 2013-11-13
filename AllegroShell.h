@@ -4,6 +4,24 @@
 class Model;
 class View;
 
+
+class _Mouse{
+public:
+	ALLEGRO_MOUSE_STATE old_mouse;
+	ALLEGRO_MOUSE_STATE mouse;
+	int start_x;
+	int start_y;
+	int pressed;
+	bool draw_mouse;
+	unsigned current_state;
+
+	_Mouse() {;}
+	~_Mouse(){;}
+	void update(ALLEGRO_EVENT* ev);
+private:
+};
+
+
 class AllegroShell {
 	public:
 		// shell variables
@@ -13,13 +31,14 @@ class AllegroShell {
 		ALLEGRO_EVENT_QUEUE* queue;
 		ALLEGRO_TIMER* timer;
 		ALLEGRO_KEYBOARD_STATE keyboard;
-		ALLEGRO_MOUSE_STATE mouse;
+		_Mouse* mouse;
 
 		// Variables
 		bool step_flag;
 		bool step_once_flag;
 		Model* model;
 		View* view;
+
 
 		AllegroShell();
 		~AllegroShell();
@@ -33,6 +52,10 @@ class AllegroShell {
 		int display_w;
 		int display_h;
 		int fps;
+
+		void zoom_in_mouse();
+		void zoom_out_mouse();
+		
 	protected:
 };
 #endif

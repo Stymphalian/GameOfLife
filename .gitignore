@@ -18,4 +18,4 @@ allegro.log
 *.swp
 *.swo
 *.log
-noin*
+*.exe

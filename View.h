@@ -26,6 +26,9 @@ public:
 	void draw();
 	bool emit_event();
 	ALLEGRO_EVENT_SOURCE* get_event_source();
+	void zoom_camera(int x, int y, int w, int h, float cw, float ch, int dir);
+	void make_cam_within_bounds();
+
 
 private:
 	//variables
@@ -34,6 +37,7 @@ private:
 
 	void draw_model();
 	void draw_status_bar();
+	void draw_mouse();
 };
 
 #endif

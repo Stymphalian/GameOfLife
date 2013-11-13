@@ -18,7 +18,7 @@
 // ****************************
 // Implementation of the Model class
 // ****************************
-Model::Model(int w,int h){
+Model::Model(int w,int h,bool enable_thread){
 	population = 0;
 	total_steps = 0;
 	tick_count = 0;
@@ -33,8 +33,10 @@ Model::Model(int w,int h){
 	backmap = new int[width*height];
 	savedmap = new int[width*height];
 
-	vertices = new int[width*height*2];
-	vert_pos = 0;
+	num_threads = 10;
+	threads = new ALLEGRO_THREAD*[num_threads];
+	thread_args = new struct model_thread_step_t[num_threads];
+	thread_enable_flag = enable_thread;
 
 	// initialize all the arrays
 	memset(map,DEAD, sizeof(int)* width*height);
@@ -48,7 +50,9 @@ Model::~Model(){
 	delete[] map;
 	delete[] backmap;
 	delete[] savedmap;
-	delete[] vertices;
+
+	delete[] threads;
+	delete[] thread_args;
 	printf("Model destroyed\n");
 }
 
@@ -113,34 +117,8 @@ int Model::number_of_live_neighbours(int col,int row){
 }
 
 
-void Model::step(){
-	total_steps++;
-	population = 0;
-	// iterate through each position in the map and update the cells
-	vert_pos= 0;
-
-	for( int row = 0 ; row < height; ++row){
-		for( int col = 0; col < width; ++col){
-			apply_condition(col,row);			
-			if( backmap[row*width  + col] == ALIVE){
-				population++;
-				vertices[vert_pos*2] = col;
-				vertices[vert_pos*2 +1] = row;
-				vert_pos++;
-			}
-		}
-	}
-
-	// swap the maps
-	int* temp = map;
-	map =  backmap;
-	backmap = temp;
-}
-
-
 void Model::load_random_configuration(){
 	srand(time(0));
-	vert_pos = 0;
 	population = 0;
 
 	for(int row = 0; row < height; ++row){
@@ -154,9 +132,6 @@ void Model::load_random_configuration(){
 
 			if( num == ALIVE){
 				population++;
-				vertices[vert_pos*2] = col;
-				vertices[vert_pos*2+1] = row;
-				vert_pos++;
 			}
 		}
 	}
@@ -174,17 +149,86 @@ void Model::reset(){
 	// reset the map to the saved map
 	memcpy(map, savedmap, sizeof(int)*width*height);
 
-	vert_pos = 0;
+	// count the current population
 	for(int row = 0; row < height; ++row){
 		for(int col = 0; col < width; ++col){
 			if(map[row*width +col] == ALIVE) {
 				population++;
-
-				vertices[vert_pos*2] = col;
-				vertices[vert_pos*2 +1] = row;
-				vert_pos++;
 			}
 		}
 	}
 
+}
+
+static void* model_thread_step(ALLEGRO_THREAD* thread, void* args){
+	struct model_thread_step_t* arg = (struct model_thread_step_t*) args;
+
+	int width = arg->model->width;
+	int c= 0;
+	for( int row = arg->start_row; row < arg->end_row; ++row){
+		for( c= 0; c < width; ++c ){
+			arg->model->apply_condition(c,row);
+			if( arg->model->backmap[row*width + c] == Model::ALIVE){
+				arg->population++;
+			}
+		}
+		
+	}
+
+	return 0;
+}
+
+void Model::step(){
+	total_steps++;
+	population = 0;
+	if(thread_enable_flag){		
+		int row_segment = height/num_threads;
+		int start_row= 0; 
+		int end_row = start_row + row_segment;
+		int tpos = 0;
+
+		// create the threads to run the step.
+		for(int i = 0; i < num_threads; ++i){
+			// setup the arguments
+			thread_args[tpos].model = this;
+			thread_args[tpos].start_row = start_row;
+			thread_args[tpos].end_row = end_row;
+			thread_args[tpos].population = 0;
+
+			// create and start the thread
+			threads[tpos] = al_create_thread(model_thread_step,(void*) &thread_args[tpos]);
+			al_start_thread(threads[tpos]);
+
+			// set the start and end-rows for the next thread
+			start_row = end_row;
+			end_row = start_row + row_segment;
+			if( start_row > height){break;}
+			if( end_row >= height ) { end_row = height;}
+			if( tpos == num_threads - 1){ end_row = height;}
+			++tpos;
+		}
+
+		// wait until all the threads are done.
+		for( int i = 0; i< tpos; ++i){
+			al_join_thread(threads[i],NULL);			
+			population += thread_args[i].population;
+		}
+
+	}else{	
+		// iterate through each position in the map and update the cells
+		for( int row = 0 ; row < height; ++row){
+			for( int col = 0; col < width; ++col){
+				apply_condition(col,row);			
+				if( backmap[row*width  + col] == ALIVE){
+					population++;
+				}
+			}
+		}
+		
+	}
+
+	// swap the maps
+	int* temp = map;
+	map =  backmap;
+	backmap = temp;		
 }

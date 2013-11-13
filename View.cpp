@@ -27,8 +27,8 @@ View::View(AllegroShell* control, Model* model){
 
 	cam_x = 0;
 	cam_y = 0;
-	cam_w = model->width/2;
-	cam_h = model->height/2;
+	cam_w = model->width;
+	cam_h = model->height;
 	cam_move_rate = 1;
 
 	_gold = al_map_rgb(220,220,160);
@@ -61,9 +61,18 @@ void View::draw(){
 	al_clear_to_color(al_map_rgb(0,0,0));
 	draw_model();
 	draw_status_bar();
+	draw_mouse();
 	al_flip_display();		
 }
 
+void View::draw_mouse(){
+	if( control->mouse->draw_mouse){
+		_Mouse* mouse = control->mouse;
+		al_draw_rectangle(mouse->mouse.x,mouse->mouse.y,
+											mouse->start_x,mouse->start_y,
+											al_map_rgb(255,0,0),1);
+	}
+}
 
 void View::draw_model(){
 	//model->draw(width,height);
@@ -109,7 +118,7 @@ void View::draw_model(){
 				float x2 = x1 + cell_width;
 				float y2 = y1 + cell_height;
 				// al_draw_rectangle(x1,y1,x2,y2,al_map_rgb(255,0,0),0);
-				al_draw_filled_rectangle(x1,y1,x2,y2,al_map_rgb(255,0,0));
+				al_draw_filled_rectangle(x1,y1,x2,y2,al_map_rgb(255,255,0));
 			}
 
 
@@ -146,7 +155,83 @@ void View::draw_status_bar(){
 	al_draw_textf(_font_carbon_12,_gold,5,50,0,"cam_x=%d,cam_y=%d",cam_x,cam_y);
 	al_draw_textf(_font_carbon_12,_gold,5,65,0,"cam_w=%d,cam_h=%d",cam_w,cam_h);
 	al_draw_textf(_font_carbon_12,_gold,5,80,0,"cam_move_rate=%d",cam_move_rate);
-	al_draw_textf(_font_carbon_12,_gold,5,95,0,"wrap LR%d NS.%d",
+	al_draw_textf(_font_carbon_12,_gold,5,95,0,"wrap LR.%d NS.%d",
 		model->horizontal_wrapping, model->vertical_wrapping);
 
+	al_draw_textf(_font_carbon_12,_gold,5,110,0,"mx:%d.my:%d",
+							control->mouse->mouse.x,control->mouse->mouse.y);
+
+}
+
+
+
+
+// tl_x, tl_y, width,height, cell_w, cell_h are measured in pixels
+// direction = 0, means to zoom out
+// direction = 1, measn to zoom in
+void View::zoom_camera(int tl_x, int tl_y, int width, int height,
+											 float cell_w, float cell_h,int direction){
+	assert(cell_w != 0);
+	assert(cell_h != 0);
+
+	if( direction == 1) // Zooming Out
+	{
+
+		if( cell_w < 1){cell_w = 1.0/cell_w;}
+		if( cell_h < 1 ){cell_h = 1.0/cell_h;}
+
+		cam_x += tl_x/cell_w;
+		cam_y += tl_y/cell_h;
+		cam_w = width/cell_w;
+		cam_h = height/cell_h;
+	
+	}
+	else if( direction == 0) // Zooming-In
+	{
+
+		// if cell_w/cell_h < 1, then each pixel represents more than one cell
+		// else they represent only a fraction of the cell
+		// (1.0 /cell_w) gives the numbers of cells per pixel.
+		if( cell_w < 1){cell_w = 1.0/cell_w;}
+		if( cell_h < 1 ){cell_h = 1.0/cell_h;}
+
+		cam_x += tl_x/cell_w;
+		cam_y += tl_y/cell_h;
+		cam_w = width/cell_w;
+		cam_h = height/cell_h;
+	}
+
+	make_cam_within_bounds();
+}
+
+void View::make_cam_within_bounds(){
+	// handle camera width
+	if(cam_w < 1){ cam_w = 1;}
+	else if( cam_w > model->width){ cam_w = model->width;}
+
+	// handle camera height
+	if( cam_h < 1) {cam_h = 1;}
+	else if( cam_h > model->height){cam_h = model->height;}
+
+	// Handle the horizontal camer position
+	if( model->horizontal_wrapping){
+		// make sure cam_x is good, with wrapping
+		if( cam_x < 0 ){ cam_x = model->width + cam_x;}
+		else if ( cam_x >= model->width) { cam_x %= model->width;}
+	}else{
+		// 0 <= cam_x < model->width - cam_w
+		if( cam_x >= model->width -cam_w ) { cam_x = model->width - cam_w;}
+		else if( cam_x < 0 ){ cam_x = 0;} 
+	}
+
+	// handle the vertical camera position
+	if( model->vertical_wrapping){
+		// make sure that cam_y is good, with wrapping
+		if( cam_y < 0 ) { cam_y = model->height  + cam_y;}
+		else if( cam_y >= model->height) { cam_y %= model->height;}
+	}else{
+		//  0 <= cam_y < model->height - cam_h
+		if( cam_y >= model->height - cam_h){ cam_y = model->height - cam_h;}
+		else if( cam_y < 0){ cam_y = 0;}
+	}
 }

@@ -5,16 +5,18 @@
 	[-] vertical wrapping
 [-] View class to handle different views.
 	takes the model and displays it
-	will now the width and height of the display
-	will be given a  window of the model to display
+	will know the width and height of the display
+	will hold variables to determine the camera into the model
 	will determine the best screen real estate to assign to each cell
--zooming
+-zooming ( might still have some bugs)
 	[-]zooming with keyboard
-	- zoom in the center
-	-zooming with mouse
-			- a rectangle drawn by the mouse can be used to denote
+	[x]zoom in the center
+	- zooming with mouse
+			[-] a rectangle drawn by the mouse can be used to denote
 				the new screen region
-			- Minimum zoom level
+			[-] Minimum and max zoom level
+			- Shift-mouse means we zoom-out instead of in
+			- provide option for even width/height zoom only
 	[x] how to handle inifnite maximum zoom level
 		how do we handle the user continuing to zoom out.
 		each pixel will now represent an entire region of the world
@@ -22,11 +24,10 @@
 		region will be displayed
 -better looking squares
 -controls for running the simulation
-	[-] ability to increase speed and decrease speed of steps.
-		- x0.25, x0.5, x2, x4, x8
+	[-] ability to increase speed and decrease speed of steps. ( 1 --> 100)
 	[-] stop,start
 	[-] restart
-	- spawn new random configuration.
+	[-] spawn new random configuration.
 	- load a configuration file
 			prompts the user for a filename.
 				- if the file is not found, it will continue 
@@ -42,7 +43,6 @@
 	[-] the value in the cell will be 100 as a alive
 		and 0 as dead, and then with decreasing gradients as
 		steps since it was alive.
--colors for alive and dead cells
 -different conditions
 	- new types of cells, plant, animals, dead, alive
 	- modifications on when a cell turns alive, or dead
@@ -56,3 +56,23 @@
 - ability to manage the keyboard.
 	- setting up custom hotkeys
 	- better architecture for controls
+- optimization
+	- optimize the draw_model routine. Don't need to do so many 'if' checks 
+		on the rows and columns if we split up the login into two more loops.
+	[-] add threads to do the model stepping.
+		A: Each step now creates 10 threads to execute the step.
+		It does provide a boost to speed, but at the cost of almost 
+		of two times the cpu power. Task manager went from 32% to ~70%
+		Comparing this to the only 10-15% increase in step speed, i don't 
+		think it is really worth it in most cases. I have provided an option
+		when creating the class to set the thread_enable_flag to true or false.
+		Another solution that I was thinking about, but haven't yet worked out the timings
+		is to have threads constantly in the background, which process the next step.
+		This is a classic consumer/producer problem. What I am afraid of is the complexity 
+		of this solution. I will need to make use of threads, mutexes, and conditional variables
+		in order to make it work. I also don't know what kind of benefits I can get out
+		of this approach. The program may just be stuck waiting for the threads to finish 
+		their processing so that it can start the drawing. Also there are issues about space consumption.
+		Each completed map would need to be stored in memory. A way to alleviate this memory constraint
+		( trading with some processing time), is to create a list/vector which holds x,y coordinates
+		of those cells which have changed since the last iteration.
