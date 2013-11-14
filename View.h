@@ -1,11 +1,9 @@
 #ifndef VIEW_H
 #define VIEW_H
 
-#include <allegro5/allegro.h>
+#include "GameOfLife.h"
 class AllegroShell;
 class Model;
-
-#define USER_VIEW_EVENT ALLEGRO_GET_EVENT_TYPE('j','o','r','d')
 
 class View{
 public:

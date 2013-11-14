@@ -1,17 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <gl/glu.h>
-
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_opengl.h>
-#include <allegro5/allegro_image.h>
-#include <allegro5/allegro_font.h>
-#include <allegro5/allegro_ttf.h>
-#include <allegro5/allegro_audio.h>
-#include <allegro5/allegro_acodec.h>
-#include <allegro5/allegro_primitives.h>
+#include "GameOfLife.h"
 
 #include "Textlog.cpp"
 #include "AllegroShell.h"
@@ -22,12 +9,19 @@ int size_x = 480;
 int size_y = 480;
 
 AllegroShell::AllegroShell(){
+	init(Defaults::display_height,
+			Defaults::display_width,
+			Defaults::step_flag);
+}
+AllegroShell::~AllegroShell(){destroy(); }
+
+void AllegroShell::init(int disp_h, int disp_w, int step_flag){
 	fps = 30;
-	display_h = 480;
-	display_w = 480;
+	display_h = disp_h; // 480
+	display_w = disp_w; // 480
 	run_flag = true;
 	draw_flag = false;
-	step_flag = false;
+	this->step_flag = step_flag; // false
 	step_once_flag = false;
 
 	int x = 8;
@@ -44,7 +38,7 @@ AllegroShell::AllegroShell(){
 	printf("%d errors during loading.\n",x);
 
 	// initializing the allegro objects
-	display = al_create_display(display_h,display_w);
+	display = al_create_display(display_w,display_h);
 	queue = al_create_event_queue();
 	timer = al_create_timer(1.0/fps);
 
@@ -62,15 +56,14 @@ AllegroShell::AllegroShell(){
 	// instantiate my objects
 	mouse  = new _Mouse();
 
-	model = new Model(size_x,size_y,false);
+	model = new Model();
 	al_set_timer_speed(timer,1.0/model->speed);
 
 	view = new View(this,model);
 	al_register_event_source(queue,view->get_event_source());
 	view->emit_event();
 }
-
-AllegroShell::~AllegroShell(){
+void AllegroShell::destroy(){
 	al_stop_timer(timer);
 	al_destroy_timer(timer);
 	al_destroy_event_queue(queue);
@@ -78,7 +71,7 @@ AllegroShell::~AllegroShell(){
 	delete mouse;
 	delete model;
 	delete view;
-	printf("AllegroShell destroyed\n");
+	Textlog::get().log("AllegroShell destroyed\n");
 }
 
 bool AllegroShell::isKeyboardEvent(ALLEGRO_EVENT* ev){
@@ -90,8 +83,45 @@ bool AllegroShell::isKeyboardEvent(ALLEGRO_EVENT* ev){
 	}
 }
 
+bool AllegroShell::prompt_for_file(char* buffer,unsigned bufsize,const char* pattern){
+	al_rest(0.2); // Hack that i need for it to work!
+	ALLEGRO_FILECHOOSER* d;
+	d = al_create_native_file_dialog(NULL,"",pattern,1); // 1 mean file must exist
+	if(!d){return false;}
+	if(!al_show_native_file_dialog(NULL,d)){
+		al_destroy_native_file_dialog(d);
+		return false;
+	}
+
+	if( al_get_native_file_dialog_count(d) != 1){
+		al_destroy_native_file_dialog(d);
+		return false;
+	}
+	const char* file = al_get_native_file_dialog_path(d,0);
+	strncpy(buffer,file,sizeof(char)*bufsize);
+	buffer[bufsize-1] = 0;
+	return true;
+}
+
+
 void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 	if(al_key_down(&keyboard,ALLEGRO_KEY_ESCAPE) ) {run_flag = false;}
+	if( ev->type == ALLEGRO_EVENT_KEY_DOWN){
+		if(al_key_down(&keyboard,ALLEGRO_KEY_E) ) {
+			char buffer[1024];
+			if(false == prompt_for_file((char*)buffer,1025,"*.map")){return;}
+			Textlog::get().log("Loading map file: %s\n",buffer);
+
+			delete model;
+			model = new Model(buffer);
+			view->model = model;
+			view->make_cam_within_bounds();
+			al_set_timer_speed(timer,1.0/model->speed);
+			draw_flag = true;
+		}
+
+	}
+
 	if(al_key_down(&keyboard,ALLEGRO_KEY_Q) ) {
 		if( ev->type == ALLEGRO_EVENT_KEY_CHAR|| 
 				ev->type == ALLEGRO_EVENT_KEY_CHAR ){
@@ -103,11 +133,9 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			draw_flag = true;
 		}
 	}
-	if(al_key_down(&keyboard,ALLEGRO_KEY_W) ) {;}
-	if(al_key_down(&keyboard,ALLEGRO_KEY_E) ) {;}
+
 	if(al_key_down(&keyboard,ALLEGRO_KEY_A) ) {
-		if( ev->type == ALLEGRO_EVENT_KEY_CHAR || 
-				ev->type == ALLEGRO_EVENT_KEY_CHAR ){
+		if( ev->type == ALLEGRO_EVENT_KEY_CHAR ){
 			model->speed--;
 			if( model->speed <= 0){
 				model->speed = 1;
@@ -129,17 +157,16 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 		al_set_timer_speed(timer,1.0/model->speed);
 	}
 
-
-
 	if(al_key_down(&keyboard,ALLEGRO_KEY_N) ) {
 		if( ev->type == ALLEGRO_EVENT_KEY_DOWN){
 			delete model;
-			model = new Model(size_x,size_y,false);
+			model = new Model();
 			view->model = model;
+			view->make_cam_within_bounds();
+			al_set_timer_speed(timer,1.0/model->speed);
 			draw_flag = true;
 		}
 	}
-
 
 	if( ev->type == ALLEGRO_EVENT_KEY_CHAR) {
 		bool key_touched = false;
@@ -248,13 +275,6 @@ bool AllegroShell::isMouseEvent(ALLEGRO_EVENT* ev){
 	}
 }
 
-void _Mouse::update(ALLEGRO_EVENT* ev){
-	old_mouse = mouse;
-	al_get_mouse_state(&mouse);
-}
-
-
-
 void AllegroShell::_zoom_mouse(int direction){
 	_Mouse* m = mouse; // just to make it easier to type shit out.
 
@@ -326,18 +346,6 @@ void AllegroShell::draw(){
 	view->draw();
 }
 
-void AllegroShell::load_configuration(){
-	ALLEGRO_FILECHOOSER* choose;
-	choose = al_create_native_file_dialog(0,"","*.*",0);
-	if(!choose){return;}
-
-	al_show_native_file_dialog(display,choose);
-	const char* file = al_get_native_file_dialog_path(choose,0);
-	Textlog::get().log("Loading map: %s",file);
-	al_destroy_native_file_dialog(choose);
-	
-}
-
 void AllegroShell::run(){
 // run the loop
 	unsigned num = 0;
@@ -347,8 +355,6 @@ void AllegroShell::run(){
 	unsigned keyboard_count = 0;
 	unsigned mouse_count = 0;
 	unsigned timer_count = 0;
-	load_configuration();
-
 	
 	while( run_flag ){
 		al_wait_for_event(queue,&ev);
@@ -389,7 +395,6 @@ void AllegroShell::run(){
 			draw_flag = false;
 		}
 	} // end while(run_flag)
-
 
 	Textlog::get().log("\nkeyboard_count = %u\n",keyboard_count);
 	Textlog::get().log("mouse_count = %u\n",mouse_count);

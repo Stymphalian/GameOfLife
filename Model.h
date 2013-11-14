@@ -1,14 +1,10 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-
-
-
 class Model{	
 public:
 	int population;
 	int total_steps;
-	int tick_count; // allows you to change the speed of the simuation
 	int speed;
 
 	bool horizontal_wrapping;
@@ -27,17 +23,20 @@ public:
 	struct model_thread_step_t* thread_args;
 
 
-	Model(int w,int h,bool enable_thread);
+	Model();
+	Model(const char* mapname);
 	~Model();
 	void step();
 	void reset();
+	void load_map(const char* mapname);
 
 	void apply_condition(int col, int row);
 	int number_of_live_neighbours(int col, int row);
 private:
 	// private methods
-	
 	void load_random_configuration();	
+	void init(int speed, bool horiz_wrapping, bool vert_wrapping,
+					int width,int height, bool enable_thread, int num_threads);
 
 public:
 	static const int ALIVE = 100;

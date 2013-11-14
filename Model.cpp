@@ -1,51 +1,105 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <gl/glu.h>
-
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_opengl.h>
-#include <allegro5/allegro_image.h>
-#include <allegro5/allegro_font.h>
-#include <allegro5/allegro_ttf.h>
-#include <allegro5/allegro_audio.h>
-#include <allegro5/allegro_acodec.h>
-#include <allegro5/allegro_primitives.h>
-
+#include "GameOfLife.h"
 #include "Model.h"
 #include "Textlog.cpp"
 
 // ****************************
 // Implementation of the Model class
 // ****************************
-Model::Model(int w,int h,bool enable_thread){
+
+Model::Model(){
+	init(Defaults::model_speed,
+		Defaults::model_horizontal_wrapping,
+		Defaults::model_vertical_wrapping,
+		Defaults::model_width,
+		Defaults::model_height,
+		Defaults::model_enable_threads,
+		Defaults::model_num_threads);
+	load_random_configuration();
+}
+Model::Model(const char* mapfile){
+	ALLEGRO_CONFIG* config = al_load_config_file(mapfile);
+	if(!config){return;}
+
+	const char* value = 0;
+	int num_value  = 0;
+
+	#define _read_config(var,key) \
+	do{ \
+		value = al_get_config_value(config,"",key); \
+		if( value) { \
+			num_value = atoi(value); \
+			var = num_value; \
+		} \
+	}while(false);
+
+	_read_config(speed,"speed");
+	_read_config(horizontal_wrapping,"horizontal_wrapping");
+	_read_config(vertical_wrapping,"vertical_wrapping");
+	_read_config(width,"width");
+	_read_config(height,"height");
+	_read_config(num_threads,"num_threads");
+	_read_config(thread_enable_flag,"enable_threads");
+
+	#undef _read_config
+
+	Textlog::get().log("Loading map file: %s\n",mapfile);
+	Textlog::get().log("(speed, horizontal_wrapping, vertical_wrapping, width, height,thread_enable_flag, num_threads)\n");
+	Textlog::get().log("(%d,",speed);
+	Textlog::get().log("%d,",horizontal_wrapping);
+	Textlog::get().log("%d,",vertical_wrapping);
+	Textlog::get().log("%d,",width);
+	Textlog::get().log("%d,",height);
+	Textlog::get().log("%d,",thread_enable_flag);
+	Textlog::get().log("%d)\n",num_threads);
+
+	init(speed, horizontal_wrapping, vertical_wrapping,
+		width, height,thread_enable_flag, num_threads);
+
+	ALLEGRO_CONFIG_ENTRY* iterator;
+	const char* key  = al_get_first_config_entry(config,"map",&iterator);
+	int x = -1;
+	int y = -1;
+	while( key != NULL){
+		value = al_get_config_value(config,"map",key);
+		key = al_get_next_config_entry(&iterator);
+		if (value){
+			int rs = sscanf(value,"%d %d",&x,&y);
+			if( rs != 2){continue;}
+			if( x< 0 || x >= width){continue;}
+			if( y< 0 || y >= height){continue;}
+
+			map[y*width + x]= ALIVE;
+			savedmap[y*width + x]= ALIVE;
+		}	
+	}
+
+	al_destroy_config(config);
+}
+
+
+void Model::init(int speed, bool horiz_wrapping, bool vert_wrapping,
+								int width,int height, bool enable_thread, int num_threads)
+{
 	population = 0;
 	total_steps = 0;
-	tick_count = 0;
-	speed = 10;
-
-	horizontal_wrapping = true;
-	vertical_wrapping = true;
-
-	width = w;
-	height = h;
+	this->speed = speed;
+	horizontal_wrapping = horiz_wrapping;
+	vertical_wrapping = vert_wrapping;
+	this->width = width;
+	this->height = height;
 	map = new int[width*height];
 	backmap = new int[width*height];
 	savedmap = new int[width*height];
 
-	num_threads = 10;
+	this->num_threads = num_threads;
 	threads = new ALLEGRO_THREAD*[num_threads];
 	thread_args = new struct model_thread_step_t[num_threads];
 	thread_enable_flag = enable_thread;
 
-	// initialize all the arrays
 	memset(map,DEAD, sizeof(int)* width*height);
 	memset(backmap, DEAD, sizeof(int)* width*height);	
-	load_random_configuration();
-	memcpy(savedmap, map, sizeof(int)*width*height);
+	memset(savedmap, DEAD, sizeof(int)*width*height);
 }
-
 
 Model::~Model(){
 	delete[] map;
@@ -57,6 +111,10 @@ Model::~Model(){
 	printf("Model destroyed\n");
 }
 
+
+void Model::load_map(const char* name){
+
+}
 
 void Model::apply_condition(int col, int row){
 	static int decrease_rate = 1;
@@ -130,6 +188,7 @@ void Model::load_random_configuration(){
 			else {num = DEAD; }
 
 			map[row*width + col] = num;
+			savedmap[row*width + col]=num;
 
 			if( num == ALIVE){
 				population++;
@@ -141,7 +200,6 @@ void Model::load_random_configuration(){
 void Model::reset(){
 	population = 0;
 	total_steps = 0;
-	tick_count = 0;
 	speed = 10;
 
 	horizontal_wrapping = true;
