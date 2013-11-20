@@ -18,7 +18,7 @@
 #include <allegro5/allegro_native_dialog.h>
 
 
-// default values;
+// default values, to be set by the configuration file (config.ini)
 class Defaults{
 public:
 	static int step_flag;
@@ -33,8 +33,6 @@ public:
 	static int model_num_threads;
 	static int model_enable_threads;
 };
-
-
 
 #define USER_VIEW_EVENT ALLEGRO_GET_EVENT_TYPE('j','o','r','d')
 

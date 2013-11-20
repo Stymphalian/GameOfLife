@@ -24,22 +24,22 @@
 		therefore if > 50% of the region is covered by cells then the 
 		region will be displayed
 -better looking squares
--controls for running the simulation
+[-] controls for running the simulation
 	[-] ability to increase speed and decrease speed of steps. ( 1 --> 100)
 	[-] stop,start
 	[-] restart
 	[-] spawn new random configuration.
-	- load a configuration file
-			prompts the user for a filename.
-				- if the file is not found, it will continue 
+	[-] load a map file
+			[-] prompts the user for a filename.
+				[-] if the file is not found, it will continue 
 					with the current simulation
-				- if the file is found, it will stop the current
+				[-] if the file is found, it will stop the current
 					simulation, load the new configuration and then start
 					running it.
-			confiuration file will tell you:
-				- width and height of the world
-				- x and y coordinates of alive cells
-			will create a new model
+				[-] specifies the various field needed to create a model
+					[-] width, height, speed, wrapping (horiz,vert), enable threads
+	[-] Configuration file ( config.ini)
+		[-] specify defaul values for the shell, and the model
 [x] show each cell as a faded region ( shades of gray )
 	[-] the value in the cell will be 100 as a alive
 		and 0 as dead, and then with decreasing gradients as

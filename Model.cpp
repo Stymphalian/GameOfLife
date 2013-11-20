@@ -6,6 +6,7 @@
 // Implementation of the Model class
 // ****************************
 
+// Load a default, random map model
 Model::Model(){
 	init(Defaults::model_speed,
 		Defaults::model_horizontal_wrapping,
@@ -23,6 +24,7 @@ Model::Model(const char* mapfile){
 	const char* value = 0;
 	int num_value  = 0;
 
+	// read valuds from the  map file, and assign them to the appropriate variables
 	#define _read_config(var,key) \
 	do{ \
 		value = al_get_config_value(config,"",key); \
@@ -31,7 +33,6 @@ Model::Model(const char* mapfile){
 			var = num_value; \
 		} \
 	}while(false);
-
 	_read_config(speed,"speed");
 	_read_config(horizontal_wrapping,"horizontal_wrapping");
 	_read_config(vertical_wrapping,"vertical_wrapping");
@@ -39,9 +40,10 @@ Model::Model(const char* mapfile){
 	_read_config(height,"height");
 	_read_config(num_threads,"num_threads");
 	_read_config(thread_enable_flag,"enable_threads");
-
 	#undef _read_config
 
+
+	// dump the values into the log
 	Textlog::get().log("Loading map file: %s\n",mapfile);
 	Textlog::get().log("(speed, horizontal_wrapping, vertical_wrapping, width, height,thread_enable_flag, num_threads)\n");
 	Textlog::get().log("(%d,",speed);
@@ -52,9 +54,12 @@ Model::Model(const char* mapfile){
 	Textlog::get().log("%d,",thread_enable_flag);
 	Textlog::get().log("%d)\n",num_threads);
 
+	// assign the variables.
 	init(speed, horizontal_wrapping, vertical_wrapping,
 		width, height,thread_enable_flag, num_threads);
 
+
+	// read in the map coordinates of ALIVE cells
 	ALLEGRO_CONFIG_ENTRY* iterator;
 	const char* key  = al_get_first_config_entry(config,"map",&iterator);
 	int x = -1;
@@ -111,11 +116,6 @@ Model::~Model(){
 	printf("Model destroyed\n");
 }
 
-
-void Model::load_map(const char* name){
-
-}
-
 void Model::apply_condition(int col, int row){
 	static int decrease_rate = 1;
 	int new_state = 0;
@@ -151,6 +151,7 @@ void Model::apply_condition(int col, int row){
 int Model::number_of_live_neighbours(int col,int row){
 	int count= 0;
 
+	// Look around the 8 cells  and count the number of alive cells
 	for (int c = 0; c < 3 ; ++c){
 		for( int r = 0;  r< 3; ++r){
 			int c2 = col-1 + c; 
@@ -233,7 +234,6 @@ static void* model_thread_step(ALLEGRO_THREAD* thread, void* args){
 		}
 		
 	}
-
 	return 0;
 }
 
@@ -274,6 +274,7 @@ void Model::step(){
 		}
 
 	}else{	
+		
 		// iterate through each position in the map and update the cells
 		for( int row = 0 ; row < height; ++row){
 			for( int col = 0; col < width; ++col){

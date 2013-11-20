@@ -85,18 +85,23 @@ bool AllegroShell::isKeyboardEvent(ALLEGRO_EVENT* ev){
 
 bool AllegroShell::prompt_for_file(char* buffer,unsigned bufsize,const char* pattern){
 	al_rest(0.2); // Hack that i need for it to work!
+
+	// Create a file chooser dialog
 	ALLEGRO_FILECHOOSER* d;
-	d = al_create_native_file_dialog(NULL,"",pattern,1); // 1 mean file must exist
+	d = al_create_native_file_dialog(NULL,"",pattern,1); // 1 means file must exist
 	if(!d){return false;}
 	if(!al_show_native_file_dialog(NULL,d)){
 		al_destroy_native_file_dialog(d);
 		return false;
 	}
 
+	// check to make sure something was seleeted
 	if( al_get_native_file_dialog_count(d) != 1){
 		al_destroy_native_file_dialog(d);
 		return false;
 	}
+
+	// Get the file that was selected, and copy into 'buffer'
 	const char* file = al_get_native_file_dialog_path(d,0);
 	strncpy(buffer,file,sizeof(char)*bufsize);
 	buffer[bufsize-1] = 0;
@@ -106,6 +111,8 @@ bool AllegroShell::prompt_for_file(char* buffer,unsigned bufsize,const char* pat
 
 void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 	if(al_key_down(&keyboard,ALLEGRO_KEY_ESCAPE) ) {run_flag = false;}
+
+	// Load a new map file
 	if( ev->type == ALLEGRO_EVENT_KEY_DOWN){
 		if(al_key_down(&keyboard,ALLEGRO_KEY_E) ) {
 			char buffer[1024];
@@ -122,9 +129,9 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 
 	}
 
+	// increase/decrease the steps/second of the model
 	if(al_key_down(&keyboard,ALLEGRO_KEY_Q) ) {
-		if( ev->type == ALLEGRO_EVENT_KEY_CHAR|| 
-				ev->type == ALLEGRO_EVENT_KEY_CHAR ){
+		if( ev->type == ALLEGRO_EVENT_KEY_CHAR){
 			model->speed++;
 			if( model->speed > 100){
 				model->speed = 100;
@@ -133,7 +140,6 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			draw_flag = true;
 		}
 	}
-
 	if(al_key_down(&keyboard,ALLEGRO_KEY_A) ) {
 		if( ev->type == ALLEGRO_EVENT_KEY_CHAR ){
 			model->speed--;
@@ -144,19 +150,27 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			draw_flag = true;
 		}
 	}
+
+	// Start/stop the model
 	if(al_key_down(&keyboard,ALLEGRO_KEY_S) ) {
 		if( ev->type == ALLEGRO_EVENT_KEY_DOWN){
 			step_flag = (step_flag == false)? true: false;
 		}
 	}
+
+
+	// Iterate the model once.
 	if(al_key_down(&keyboard,ALLEGRO_KEY_D) ) {
 		step_once_flag = true;
 	}
+
+	// Reset the map to the original configuration
 	if(al_key_down(&keyboard,ALLEGRO_KEY_R) ) {
 		model->reset();
 		al_set_timer_speed(timer,1.0/model->speed);
 	}
 
+	// Create a new, random model
 	if(al_key_down(&keyboard,ALLEGRO_KEY_N) ) {
 		if( ev->type == ALLEGRO_EVENT_KEY_DOWN){
 			delete model;
@@ -171,7 +185,7 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 	if( ev->type == ALLEGRO_EVENT_KEY_CHAR) {
 		bool key_touched = false;
 
-			// handle the arrow keys.
+		// move the camera horizontally/vertically 
 		if(al_key_down(&keyboard,ALLEGRO_KEY_UP)){
 			key_touched = true;
 			view->cam_y -= view->cam_move_rate;
@@ -189,7 +203,7 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			view->cam_x -= view->cam_move_rate;
 		}
 
-		// handle expanding the size of the camera
+		// Modify the width , or height of the camera
 		if(al_key_down(&keyboard,ALLEGRO_KEY_T)){
 			key_touched = true;
 			view->cam_w -= view->cam_move_rate;
@@ -218,6 +232,8 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			view->cam_w -= view->cam_move_rate;
 			view->cam_h -= view->cam_move_rate;
 		}
+
+
 		// reset the camera to maximum zoom
 		if( al_key_down(&keyboard, ALLEGRO_KEY_I)){
 			key_touched =true;
@@ -226,7 +242,6 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 			view->cam_x = 0;
 			view->cam_y = 0;
 		}
-
 
 		// handle the horizontal and vertical wrapping
 		if(al_key_down(&keyboard,ALLEGRO_KEY_3) ) {
@@ -246,7 +261,7 @@ void AllegroShell::handle_keyboard(ALLEGRO_EVENT* ev){
 	}
 
 
-
+	// Modify the move-rate of the camera
 	if( ev->type == ALLEGRO_EVENT_KEY_CHAR) {
 		if(al_key_down(&keyboard,ALLEGRO_KEY_1) ) {
 			if(ev->type == ALLEGRO_EVENT_KEY_CHAR){
@@ -278,15 +293,20 @@ bool AllegroShell::isMouseEvent(ALLEGRO_EVENT* ev){
 void AllegroShell::_zoom_mouse(int direction){
 	_Mouse* m = mouse; // just to make it easier to type shit out.
 
+	// get the distance between the start position and the current mouse position
 	int dx = abs( m->start_x - m->mouse.x);
 	int dy = abs( m->start_y - m->mouse.y);
 	if( !dx && !dy){return;}
 
+	// get the top-left corner ( pixels)
 	int tl_x = ( m->start_x < m->mouse.x) ? m->start_x : m->mouse.x;;
 	int tl_y = ( m->start_y < m->mouse.y) ? m->start_y : m->mouse.y;;
+
+	// get the width/height (pixels)
 	float cell_w  = (float)view->disp_w/view->cam_w;
 	float cell_h = (float)view->disp_h/view->cam_h;
 
+	// zoom the camera with the specified bounding box
 	view->zoom_camera(tl_x,tl_y,dx,dy,cell_w,cell_h,direction);
 }
 void AllegroShell::zoom_in_mouse(){_zoom_mouse(0); }
@@ -364,17 +384,18 @@ void AllegroShell::run(){
 		if( ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE){
 			run_flag = false;
 		}else if( isKeyboardEvent(&ev)){
+			// handle keyboard input
 			++keyboard_count;
 			al_get_keyboard_state(&(keyboard));
 			handle_keyboard(&ev);
 		}else if( isMouseEvent(&ev) ){
+			// handle mouse input
 			++mouse_count;
 			mouse->update(&ev);
 			handle_mouse(&ev);
 		}else if( ev.type  == ALLEGRO_EVENT_TIMER){
 			++timer_count;
-			
-			// Update only if we haven't drawn the scene
+			// Update the model only if we haven't drawn the scene
 			if(draw_flag == false){
 				if(step_once_flag){
 					// always step once if the user requests it

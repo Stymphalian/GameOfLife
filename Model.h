@@ -28,7 +28,6 @@ public:
 	~Model();
 	void step();
 	void reset();
-	void load_map(const char* mapname);
 
 	void apply_condition(int col, int row);
 	int number_of_live_neighbours(int col, int row);
